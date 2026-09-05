@@ -1,0 +1,89 @@
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>사각형의 무게중심 — 받쳐서 찾기</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:#0f1723;color:#e8edf5;
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  line-height:1.7;display:flex;flex-direction:column}
+.wrap{max-width:1000px;margin:0 auto;padding:44px 24px 70px;width:100%}
+header{text-align:center;margin-bottom:8px}
+h1{font-size:30px;margin:0 0 10px;letter-spacing:-.8px;font-weight:800}
+.lead{color:#8fa2bd;font-size:15.5px;margin:0 auto;max-width:640px}
+.q{background:#1a2942;border-left:4px solid #5b9bd5;border-radius:0 10px 10px 0;
+  padding:15px 20px;margin:26px 0 30px;font-size:16px;color:#cfdcec}
+.q b{color:#8fc4f5}
+.steps{display:grid;gap:16px}
+a.card{display:block;text-decoration:none;color:inherit;background:#16202e;
+  border:1px solid #24354b;border-radius:14px;padding:20px 22px;
+  transition:.16s;position:relative;overflow:hidden}
+a.card:hover{background:#1c2a3c;border-color:#3d5a7d;transform:translateY(-2px)}
+a.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.num{display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:9px;background:var(--c);color:#0f1723;
+  font-weight:800;font-size:15px;margin-right:11px;flex:0 0 auto}
+.hd{display:flex;align-items:center;margin-bottom:8px}
+.tt{font-size:19px;font-weight:700;letter-spacing:-.4px}
+.obj{margin:0 0 9px 41px;font-size:17.5px;font-weight:800;letter-spacing:-.4px;
+  color:#fff;line-height:1.35}
+.obj b{color:var(--c)}
+.ask{color:#a9bdd6;font-size:14.6px;margin:0 0 10px 41px}
+.ask b{color:#8fc4f5}
+.goal{margin-left:41px;font-size:13.2px;color:#7b8ea8}
+.goal .k{color:#5b9bd5;font-weight:700}
+footer{margin-top:56px;font-size:0.85rem;color:#94a3b8;text-align:center}
+.tip{margin-top:30px;background:#16202e;border:1px solid #24354b;border-radius:12px;
+  padding:16px 20px;font-size:13.6px;color:#93a6bd}
+.tip b{color:#c3d0e0}
+@media(max-width:600px){
+  h1{font-size:24px}.wrap{padding:30px 16px 50px}
+  .obj,.ask,.goal{margin-left:0}
+  .obj{font-size:16px}
+}
+</style></head><body>
+<div class="wrap">
+
+<header>
+  <h1>사각형의 무게중심 — 받쳐서 찾기</h1>
+  <p class="lead">삼각형은 중선 두 개면 무게중심을 찾을 수 있었습니다.
+     그런데 <b>사각형에는 중선이 없습니다.</b></p>
+</header>
+
+<div class="q">
+  <b>물음.</b> 사각형의 무게중심은 어떻게 찾을 수 있을까요?<br>
+  아래 세 활동을 순서대로 해 보며 방법을 찾아봅시다.
+</div>
+
+<div class="steps">
+
+  <a class="card" href="screen1.html" style="--c:#5ec8f0">
+    <div class="hd"><span class="num">1</span><span class="tt">아무 데나 받쳐 보기</span></div>
+    <div class="obj">사각형이 <b>기울지 않는 자리(무게중심)</b>를 찾으시오</div>
+    <p class="ask">사각형을 어디에 받쳐야 <b>기울지 않을까요?</b></p>
+    <div class="goal"><span class="k">하는 일</span> &nbsp;침의 좌표를 바꿔 가며 평형이 되는 자리를 찾습니다.</div>
+  </a>
+
+  <a class="card" href="screen2.html" style="--c:#f5b942">
+    <div class="hd"><span class="num">2</span><span class="tt">대각선으로 나누어 보기</span></div>
+    <div class="obj">무게중심이 <b>선분 GG′ 위</b>에 있는지 확인하시오</div>
+    <p class="ask">대각선을 그으면 <b>무게중심을 아는 도형 두 개</b>가 됩니다. 그러면 무엇을 알 수 있을까요?</p>
+    <div class="goal"><span class="k">하는 일</span> &nbsp;두 삼각형의 무게중심 G·G′를 잇고, 그 선분 위에서 평형점을 찾습니다.</div>
+  </a>
+
+  <a class="card" href="screen3.html" style="--c:#e8734a">
+    <div class="hd"><span class="num">3</span><span class="tt">넓이를 바꾸어 보기</span></div>
+    <div class="obj">대각선에 의해 잘린 <b>두 삼각형의 넓이</b>와 <b>무게중심의 위치</b>에 어떤 관계가 있을까요?</div>
+    <div class="goal"><span class="k">하는 일</span> &nbsp;두 삼각형의 넓이비를 바꿔 가며 평형점이 어떻게 움직이는지 살핍니다.</div>
+  </a>
+
+</div>
+
+<div class="tip">
+  <b>사용법</b> &nbsp;화면을 끌면 돌려볼 수 있고, 왼쪽 세로 슬라이더로 보는 높이를 바꿉니다.
+  각 활동 위쪽의 <b>1 · 2 · 3</b> 단추로 서로 오갈 수 있습니다.
+</div>
+
+
+<footer>&copy; 2026 서울사대부중 2학년 수학B 허철호 선생님 · All rights reserved</footer>
+
+</div></body></html>

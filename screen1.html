@@ -1,0 +1,691 @@
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1 · 아무 데나 받쳐 보기 — 사각형의 무게중심</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:#0f1723;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#e8edf5;display:flex;flex-direction:column}
+#top{background:#16202e;padding:10px 22px;display:flex;align-items:center;gap:14px;flex:0 0 auto;border-bottom:1px solid #24354b}
+#top h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.3px}
+#top .s{font-size:13px;color:#8fa2bd}
+#main{flex:1;display:flex;min-height:0}
+#view{flex:1;position:relative;min-width:0}
+canvas{display:block;width:100%;height:100%}
+#side{flex:0 0 400px;background:#16202e;border-left:1px solid #24354b;padding:18px 20px;
+  display:flex;flex-direction:column;overflow-y:auto}
+/* 폭이 넓어졌으니 글자도 조금 키운다 — 스크롤 없이 담기게 여백은 촘촘히 */
+#side .readout{padding:12px 15px;margin-bottom:12px}
+#side .sl{margin-bottom:13px}
+#side .hint{font-size:14px;line-height:1.7}
+h2{font-size:16px;margin:0 0 12px;letter-spacing:-.3px;color:#fff}
+p{font-size:14px;line-height:1.8;color:#c3d0e0;margin:0 0 14px}
+.readout{background:#0f1723;border:1px solid #24354b;border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.readout .lb{font-size:11.5px;color:#7b8ea8;font-weight:700;letter-spacing:.4px}
+.readout .v{font-size:32px;font-weight:800;letter-spacing:-1px;margin-top:2px;font-variant-numeric:tabular-nums}
+.readout .st{font-size:13.5px;margin-top:4px;font-weight:600}
+.sl{margin-bottom:16px}
+/* 슬라이더 제목과 '현재 값'은 성격이 다르다 — 나란히 두면 둘 다 제목처럼 읽힌다.
+   제목은 위에 작게, 값은 그 아래 크게 별도 줄로 둔다. */
+.sl .ttl{font-size:11.5px;color:#7b8ea8;font-weight:700;letter-spacing:.4px;margin-bottom:3px}
+.sl .val{font-size:15px;color:#dbe6f5;font-weight:700;margin-bottom:9px;letter-spacing:-.2px}
+input[type=range]{width:100%;accent-color:#5b9bd5;height:22px}
+.row{display:flex;gap:8px;margin-bottom:14px}
+button{flex:1;font-family:inherit;font-size:13px;font-weight:600;border:1px solid #2e435e;background:#1d2b3d;color:#c3d0e0;border-radius:8px;padding:9px 6px;cursor:pointer;transition:.15s}
+button:hover{background:#26374d;border-color:#3d5a7d}
+button.on{background:#2f6fb5;border-color:#4a8ed0;color:#fff}
+/* 범례 — 3D 화면 좌하단 오버레이 (패널 스크롤 방지) */
+#lg{position:absolute;right:14px;bottom:40px;background:rgba(18,28,42,.86);border:1px solid #26374d;
+  border-radius:10px;padding:10px 13px;font-size:12px;line-height:1.95;color:#b3c2d6;pointer-events:none;backdrop-filter:blur(3px)}
+#lg i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:7px}
+/* 시점 조작 — 3D 화면 좌측 중앙, 세로 슬라이더.
+   시야가 위아래(z축)로만 움직이므로 조작 방향도 세로여야 직관적이다.
+   위로 올리면 위에서, 내리면 아래에서 본다 — 라벨은 '위'/'아래' 두 개면 충분하다. */
+#vc{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  background:rgba(18,28,42,.86);border:1px solid #26374d;border-radius:10px;
+  padding:12px 10px;backdrop-filter:blur(3px);
+  display:flex;flex-direction:column;align-items:center;gap:9px}
+#vc .cap{font-size:12px;color:#9fb2ca;font-weight:700;letter-spacing:.5px;line-height:1}
+/* writing-mode 세로 슬라이더 — 위쪽이 최댓값이 되도록 direction:rtl 을 함께 쓴다 */
+#vc input[type=range]{-webkit-appearance:slider-vertical;appearance:slider-vertical;
+  writing-mode:vertical-lr;direction:rtl;width:22px;height:190px;margin:0}
+#dh{position:absolute;left:14px;bottom:40px;font-size:11px;color:#6d8099;letter-spacing:-.2px;
+  background:rgba(18,28,42,.86);border:1px solid #26374d;border-radius:8px;padding:6px 10px;
+  backdrop-filter:blur(3px);pointer-events:none}
+.hint{background:#1a2942;border-left:3px solid #5b9bd5;padding:11px 13px;border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.75;color:#cfdcec;margin-bottom:14px}
+.hint b{color:#8fc4f5}
+#tag{position:absolute;left:50%;top:16px;transform:translateX(-50%);background:rgba(20,32,48,.92);border:1px solid #2e435e;padding:8px 20px;border-radius:22px;font-size:14px;font-weight:600;pointer-events:none;transition:.25s}
+@media(max-width:960px){#main{flex-direction:column}
+  #side{flex:0 0 auto;max-height:46%;border-left:0;border-top:1px solid #24354b;overflow-y:auto}
+  #lg{font-size:11px;line-height:1.7;padding:8px 10px}
+  #vc{padding:10px 8px}
+  #vc input[type=range]{height:150px}}
+/* 화면이 낮을 때 — 범례를 '숨기지' 않는다.
+   숨겨 버리면 100% 배율에서 색 설명이 통째로 사라져(브라우저 창 높이는 620px 아래가 흔하다)
+   학생이 파란/주황이 뭔지 알 수 없다. 대신 촘촘하게 줄여서 계속 보여준다. */
+@media(max-height:620px){
+  #lg{font-size:11px;line-height:1.62;padding:7px 10px;right:10px;bottom:34px}
+  #lg i{width:9px;height:9px;margin-right:5px}
+}
+@media(max-height:520px){
+  #lg{font-size:10px;line-height:1.5;padding:6px 8px}
+  #vc{padding:9px 7px}
+  #vc input[type=range]{height:130px}
+  #dh{display:none}          /* 안내문만 접는다 — 조작은 그대로 */
+}
+
+/* ── 활동 사이 이동 (1·2·3 + 처음) ── */
+#nav{display:flex;align-items:center;gap:6px;margin-left:auto;flex:0 0 auto}
+#nav a{display:inline-flex;align-items:center;justify-content:center;
+  min-width:32px;height:32px;padding:0 9px;border-radius:8px;
+  border:1px solid #2e435e;background:#1d2b3d;color:#c3d0e0;
+  font-size:13px;font-weight:700;text-decoration:none;transition:.15s}
+#nav a:hover{background:#26374d;border-color:#3d5a7d;color:#fff}
+#nav a.on{background:#2f6fb5;border-color:#4a8ed0;color:#fff;cursor:default}
+#nav .home{font-size:12.5px;font-weight:600;color:#8fa2bd;margin-right:3px}
+@media(max-width:700px){#nav .home{display:none}}
+
+/* ── 활동 목표 대문 — 학생이 '지금 무엇을 하는지' 한눈에 알게 ── */
+#goal{flex:0 0 auto;background:linear-gradient(180deg,#16202e,#131c29);
+  border-bottom:1px solid #24354b;padding:16px 26px 17px;
+  display:flex;align-items:baseline;gap:15px;flex-wrap:wrap}
+#goal .no{display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:10px;background:var(--gc);color:#0f1723;
+  font-weight:800;font-size:17px;flex:0 0 auto;align-self:center}
+#goal .txt{font-size:23px;font-weight:800;letter-spacing:-.6px;color:#fff;line-height:1.3}
+#goal .txt b{color:var(--gc)}
+#goal .sub{font-size:14px;color:#8fa2bd;letter-spacing:-.2px}
+@media(max-width:820px){
+  #goal{padding:12px 16px 13px;gap:10px}
+  #goal .txt{font-size:18px}
+  #goal .sub{font-size:12.5px;width:100%}
+  #goal .no{width:28px;height:28px;font-size:15px}
+}
+@media(max-height:620px){
+  #goal{padding:9px 18px 10px}
+  #goal .txt{font-size:17px}
+  #goal .sub{display:none}
+}
+
+/* ── 푸터 — 다른 활동 페이지와 통일 (ai-labs·domino-challenge 동일 문구) ──
+   ⚠️ 우측 패널(#side) 안에 두면 내용이 길 때 화면 밖으로 밀려나 보이지 않는다
+      (실측: 창 760px에서 푸터가 673px 경계 밖 680~728에 위치).
+      패널을 스크롤 가능하게 해도 '끝까지 내려야만 보이는' 상태라 사실상 안 보인다.
+   → 3D 화면(#view) 하단에 고정 오버레이로 얹는다. 어느 창 크기에서도 항상 보인다. */
+#view footer{position:absolute;left:0;right:0;bottom:0;z-index:5;
+  padding:7px 12px;font-size:11px;line-height:1.4;color:#6d8099;text-align:center;
+  background:linear-gradient(180deg,rgba(15,23,35,0),rgba(15,23,35,.82) 42%);
+  pointer-events:none;letter-spacing:-.2px}
+@media(max-height:620px){#view footer{font-size:10px;padding:5px 10px}}
+</style></head><body>
+
+<div id="top"><h1>아무 데나 받쳐 보기</h1>
+<span class="s">침의 좌표를 바꿔 가며 판이 어느 쪽으로 기우는지 관찰하시오.</span><div id="nav"><a class="home" href="index.html">← 처음</a><a class="on" title="1 · 아무 데나 받쳐 보기">1</a><a href="screen2.html" title="2 · 대각선으로 나누어 보기">2</a><a href="screen3.html" title="3 · 넓이를 바꾸어 보기">3</a></div></div>
+
+<div id="goal" style="--gc:#5ec8f0"><span class="no">1</span><span class="txt">사각형이 <b>기울지 않는 자리(무게중심)</b>를 찾으시오</span><span class="sub">침을 옮겨 가며 평형이 되는 한 점을 찾습니다</span></div>
+
+<div id="main">
+  <div id="view">
+    <div id="tag">—</div>
+    <div id="lg">
+      <i style="background:#d9a441"></i>사각형 ABCD<br>
+      <i style="background:#5ec8f0"></i>침 — 지금 받치고 있는 자리<br>
+      <i style="background:#ff6b6b"></i>x축 &nbsp;<i style="background:#51d88a"></i>y축 — 바닥의 좌표평면
+    </div>
+    <div id="vc">
+      <div class="cap">위</div>
+      <input type="range" id="elsl" min="-47" max="63" value="6">
+      <div class="cap">아래</div>
+    </div>
+    <div id="dh">화면을 끌면 돌려볼 수 있습니다</div>
+    <footer>&copy; 2026 서울사대부중 2학년 수학B 허철호 선생님 · All rights reserved</footer>
+  </div>
+  <div id="side">
+    <h2>관찰</h2>
+    <div class="readout">
+      <div class="lb">지면과 이루는 각도</div>
+      <div class="v" id="tv">0.0°</div>
+      <div class="st" id="ts">—</div>
+    </div>
+    <div class="sl">
+      <div class="ttl">침의 좌표</div>
+      <div class="val" id="pv">—</div>
+    </div>
+    <div class="sl">
+      <div class="ttl">x 좌표</div>
+      <div class="val" id="vx">0</div>
+      <input type="range" id="slx" min="-20" max="90" value="0">
+    </div>
+    <div class="sl">
+      <div class="ttl">y 좌표</div>
+      <div class="val" id="vy">0</div>
+      <input type="range" id="sly" min="-20" max="90" value="0">
+    </div>
+
+    <div class="hint" id="hintbox">
+      <b>x 좌표와 y 좌표</b>를 바꿔 침을 옮겨 보십시오.
+      한 좌표씩 움직이며 각도가 <b>줄어드는 쪽</b>을 따라가면 됩니다.<br>
+      판이 <b>기울지 않는 자리의 좌표</b>를 찾아 적어 보십시오.
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ═══════ 기하 (검산 완료) ═══════
+   A(-7,-3) B(3,-5) C(6,0) D(-2,7)
+   넓이 △ABC=28.0, △ACD=57.5 (1:2.05)
+   G(0.6667,-2.6667)  G'(-1,1.3333)  M(-0.4542,0.0234)
+   선분 GG' 길이 4.3333
+   중점 N(-0.1667,-0.6667) = t 0.5
+   무게중심 M = t 0.6725  ->  중점보다 G'(넓은 △ACD) 쪽으로 0.748 치우침
+   받치는 모델: 받침점이 M과 어긋나면 판은 M이 있는 쪽(무거운 쪽)으로 기운다 */
+
+/* 무게중심이 원점 근처면 학생이 '원점이 답'이라고 오해하고, 좌표를 읽을 이유도 없어진다.
+   → 사각형을 옮겨 무게중심이 원점에서 4.5 떨어지게 했다. M ≈ (3.48, 2.92) */
+const A=[-1,1],B=[6,-1],C=[8,3],D=[2,8];
+const ar=(p,q,r)=>Math.abs((q[0]-p[0])*(r[1]-p[1])-(r[0]-p[0])*(q[1]-p[1]))/2;
+const cen=(...p)=>[p.reduce((s,v)=>s+v[0],0)/p.length,p.reduce((s,v)=>s+v[1],0)/p.length];
+const S1=ar(A,B,C), S2=ar(A,C,D);
+const G=cen(A,B,C), Gp=cen(A,C,D);
+const M=[(S1*G[0]+S2*Gp[0])/(S1+S2),(S1*G[1]+S2*Gp[1])/(S1+S2)];
+const L=Math.hypot(Gp[0]-G[0],Gp[1]-G[1]);
+const tM=((M[0]-G[0])*(Gp[0]-G[0])+(M[1]-G[1])*(Gp[1]-G[1]))/(L*L);
+const lerp=(p,q,t)=>[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t];
+const N=lerp(G,Gp,0.5);          // 선분 GG'의 중점 — M과 다르다는 것을 눈으로 보여주는 기준점
+
+/* 받침점 — 2차원. tP=학생이 지정한 목표, cP=화면에 그려지는 현재(부드럽게 따라간다) */
+/* 시작 위치 — 매번 다른 곳에서, 충분히 기울어진 상태로 출발한다.
+   꼭짓점 평균(0.0,-0.25)은 평형점과 거리가 0.53뿐이라 조금만 움직여도 걸렸다.
+   → 평형점에서 4 이상 떨어진 사각형 안의 임의의 점에서 시작한다(약 20° 이상).
+     매번 자리가 달라져 위치를 외워서 오는 것도 막는다.
+   ※ 이 계산은 M·inQuad가 정의된 뒤에 실행되어야 한다(파일 아래쪽 pickStart 호출). */
+let tP=[0,0], cP=[0,0];
+function pickStart(){
+  let p, n=0;
+  do{
+    /* 사각형의 실제 좌표 범위에서 뽑는다 — 도형을 바꿔도 따라간다 */
+    const xs=[A[0],B[0],C[0],D[0]], ys=[A[1],B[1],C[1],D[1]];
+    const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+    p=[x0+Math.random()*(x1-x0), y0+Math.random()*(y1-y0)];
+    if(++n>4000) break;                       // 안전장치 — 무한루프 방지
+  } while(!inQuad(p)||Math.hypot(p[0]-M[0],p[1]-M[1])<4);
+  tP=[p[0],p[1]]; cP=[p[0],p[1]];
+}
+
+/* 점이 사각형 ABCD 안에 있는가 — 두 삼각형 중 하나에 들면 안이다.
+   (오목사각형이어도 대각선 AC로 나눈 두 삼각형의 합집합이 곧 사각형이다) */
+function inTri(p,a,b,c){
+  const d=(q,r,t)=>(q[0]-t[0])*(r[1]-t[1])-(r[0]-t[0])*(q[1]-t[1]);
+  const d1=d(p,a,b), d2=d(p,b,c), d3=d(p,c,a);
+  const neg=(d1<0)||(d2<0)||(d3<0), pos=(d1>0)||(d2>0)||(d3>0);
+  return !(neg&&pos);
+}
+const inQuad=p=>inTri(p,A,B,C)||inTri(p,A,C,D);
+
+/* 사각형 밖을 짚었을 때 — 가장 가까운 변 위의 점으로 끌어당긴다.
+   그래야 침이 판 밖으로 나가지 않는다. */
+function clampToQuad(p){
+  if(inQuad(p)) return p;
+  let best=null,bd=Infinity;
+  const edges=[[A,B],[B,C],[C,D],[D,A]];
+  for(const [u,v] of edges){
+    const vx=v[0]-u[0], vy=v[1]-u[1];
+    const t=Math.max(0,Math.min(1,((p[0]-u[0])*vx+(p[1]-u[1])*vy)/(vx*vx+vy*vy)));
+    const q=[u[0]+vx*t,u[1]+vy*t];
+    const dd=(p[0]-q[0])**2+(p[1]-q[1])**2;
+    if(dd<bd){bd=dd;best=q}
+  }
+  return best;
+}
+
+/* ═══════ Three.js ═══════ */
+const view=document.getElementById('view');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0f1723);
+scene.fog=new THREE.Fog(0x0f1723,40,90);
+const cam=new THREE.PerspectiveCamera(38,1,0.1,300);
+const rnd=new THREE.WebGLRenderer({antialias:true});
+rnd.shadowMap.enabled=true; rnd.shadowMap.type=THREE.PCFSoftShadowMap;
+view.appendChild(rnd.domElement);
+
+scene.add(new THREE.AmbientLight(0xa8c0e0,0.55));
+const key=new THREE.DirectionalLight(0xffffff,0.85);
+key.position.set(9,20,7); key.castShadow=true;
+key.shadow.mapSize.set(2048,2048);
+const d=17; key.shadow.camera.left=-d;key.shadow.camera.right=d;
+key.shadow.camera.top=d;key.shadow.camera.bottom=-d;key.shadow.camera.far=60;
+scene.add(key);
+const fill=new THREE.DirectionalLight(0x6a8fc0,0.32);
+fill.position.set(-12,7,-6); scene.add(fill);
+
+/* 바닥 — 수평 기준면 */
+/* 바닥 높이 = 받침대 길이를 결정한다.
+   너무 낮으면(기둥이 길면) 장면 세로가 커져서, 위에서 내려다볼 때
+   받침대가 화면 아래로 잘려 나간다. 판이 주인공이므로 기둥은 짧게 둔다. */
+const FLOOR=-2.5;
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(80,80),
+  new THREE.ShadowMaterial({opacity:0.34}));
+floor.rotation.x=-Math.PI/2; floor.position.y=FLOOR; floor.receiveShadow=true;
+scene.add(floor);
+/* ── 좌표평면 (바닥) ──
+   중2는 좌표평면을 배웠으므로 침의 위치를 좌표로 말할 수 있게 한다.
+   판 위가 아니라 '바닥'에 그리는 이유: 판은 기울면 축까지 같이 기울어
+   좌표평면 구실을 못 한다. 바닥은 늘 수평이고, 침이 실제로 움직이는 면이다.
+   1칸 = 1 (기존 격자는 간격 2.5여서 좌표와 맞지 않았다). */
+const GRIDN=26;                                  // -13 ~ 13
+/* 격자는 '배경'이다 → 채도를 빼고 어둡게. 파란 계열로 두면 축·판과 뭉쳐 보인다. */
+const grid3=new THREE.GridHelper(GRIDN*2,GRIDN*2,0x39414d,0x262c36);
+grid3.position.y=FLOOR+0.01; scene.add(grid3);
+
+/* x축 · y축 — 원점에서 교차. 교과서 좌표 y는 월드 -z 방향이다. */
+function axisLine(a,b,col,w){
+  const g=new THREE.BufferGeometry().setFromPoints([a,b]);
+  const m=new THREE.Line(g,new THREE.LineBasicMaterial({color:col}));
+  scene.add(m); return m;
+}
+const AY=FLOOR+0.03;                             // 격자보다 살짝 위 (겹쳐서 가려지지 않게)
+/* 축은 '가는 선(Line)'으로는 얇아서 눈에 안 띈다 → 납작한 원기둥으로 굵게 긋는다.
+   x축·y축을 서로 다른 색으로 두어 어느 축인지 바로 알 수 있게 한다. */
+const AX_COL=0xff6b6b, AY_COL=0x51d88a;          // x축=빨강, y축=초록
+/* 축 길이 — 격자(26)만큼 길게 그리면 화살촉·축이름이 화면 밖으로 나가 안 보인다.
+   카메라 거리 34·시야각 38°에서 화면에 담기는 범위는 약 ±11.7 →
+   사각형(x:-7~6, y:-5~7)을 감싸면서, 화살촉·축이름까지 화면 안에 남는 길이. */
+const AXLEN=8.6;
+function axisBar(len,col,horiz){
+  const g=new THREE.CylinderGeometry(0.075,0.075,len*2,10);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:col}));
+  m.rotation.z=Math.PI/2;                        // 눕혀서 x방향
+  if(!horiz) m.rotation.y=Math.PI/2;             // z방향(교과서 y축)으로 돌린다
+  m.position.set(0,AY,0);
+  scene.add(m); return m;
+}
+axisBar(AXLEN,AX_COL,true);                      // x축
+axisBar(AXLEN,AY_COL,false);                     // y축
+
+/* 화살촉 — 축의 +방향을 분명히 한다.
+   ConeGeometry는 기본이 +y를 향하므로, 원하는 방향으로 눕힌다. */
+function axisTip(pos,dir,col){
+  const m=new THREE.Mesh(new THREE.ConeGeometry(0.32,0.9,14),
+    new THREE.MeshBasicMaterial({color:col}));
+  m.position.copy(pos);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+  scene.add(m); return m;
+}
+axisTip(new THREE.Vector3(AXLEN,AY,0),new THREE.Vector3(1,0,0),AX_COL);   // +x
+axisTip(new THREE.Vector3(0,AY,-AXLEN),new THREE.Vector3(0,0,-1),AY_COL); // +y (월드 -z)
+
+/* 축 라벨·눈금 숫자 — 바닥에 눕혀 놓는다(스프라이트는 늘 정면이라 어지럽다) */
+/* 축 이름·눈금 숫자.
+   ⚠️ 바닥에 '눕히면'(rotation.x=-π/2) 비스듬히 내려다볼 때 납작하게 찌그러져
+      전혀 읽히지 않는다. → 스프라이트로 '세워' 둔다. 시점과 무관하게 늘 정면.
+   바닥에서 살짝 띄워야 격자선에 묻히지 않는다. */
+function floorText(txt,x,z,col,size,bold){
+  const c=document.createElement('canvas'); const S=128; c.width=c.height=S;
+  const g=c.getContext('2d');
+  g.font=(bold?'bold ':'')+'72px "Cambria Math",Georgia,serif';
+  g.textAlign='center'; g.textBaseline='middle';
+  g.lineWidth=10; g.strokeStyle='rgba(10,18,30,.95)'; g.strokeText(txt,S/2,S/2);
+  g.fillStyle=col; g.fillText(txt,S/2,S/2);
+  /* depthTest:false — 판이 기울어 숫자를 덮어도 좌표는 계속 읽혀야 한다.
+     (좌표평면은 '읽는 도구'이므로 가려지면 쓸모가 없다) */
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:new THREE.CanvasTexture(c),transparent:true,
+    depthTest:false,depthWrite:false}));
+  sp.renderOrder=990;
+  sp.scale.set(size,size,1);
+  sp.position.set(x,FLOOR+size*0.5,z);            // 글자 절반만큼 띄워 바닥에 세운다
+  scene.add(sp); return sp;
+}
+floorText('O',-0.55,0.55,'#e8eef7',0.85,true);                   // 원점 — 흰색
+floorText('x',AXLEN+0.9,0,'#ff8f8f',1.0,true);                   // x축 이름 — 화살촉 옆
+floorText('y',0,-(AXLEN+0.9),'#6fe6a4',1.0,true);                // y축 이름 — 화살촉 옆
+/* 눈금 숫자 — 2칸마다. 촘촘하면 오히려 안 읽힌다. */
+for(let i=-10;i<=10;i+=2){ if(i===0) continue;
+  floorText(String(i), i, 0.75,'#e09a9a',0.62);                  // x축 눈금 — 연한 빨강
+  floorText(String(i), 0.75, -i,'#8fd4ab',0.62);                 // y축 눈금 — 연한 초록
+}
+
+const plate=new THREE.Group(); scene.add(plate);
+
+/* 판 (두 삼각형) */
+function tri(p,q,r,col){
+  const sh=new THREE.Shape();
+  sh.moveTo(p[0],p[1]); sh.lineTo(q[0],q[1]); sh.lineTo(r[0],r[1]); sh.closePath();
+  const geo=new THREE.ExtrudeGeometry(sh,{depth:0.22,bevelEnabled:false});
+  geo.translate(0,0,-0.11);
+  const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
+    color:col,roughness:.62,metalness:.04,side:THREE.DoubleSide}));
+  m.castShadow=true; m.receiveShadow=true;
+  m.rotation.x=-Math.PI/2;          // xy평면 → 수평면
+  return m;
+}
+/* 1번은 '대각선으로 나누기 이전' 장면이다 → 사각형 하나, 단색.
+   두 삼각형으로 칠하면 분할을 미리 알려주는 셈이 된다.
+   (내부적으로는 여전히 두 삼각형으로 그리지만 같은 색이라 경계가 보이지 않는다) */
+/* 판 색 — 축(빨강·초록)·격자(회색)와 계열이 겹치지 않는 황토색.
+   파란색이면 바닥 좌표평면과 뭉쳐 보인다. */
+const QCOL=0xd9a441;
+plate.add(tri(A,B,C,QCOL));
+plate.add(tri(A,C,D,QCOL));
+
+/* 대각선 AC */
+function tube(p,q,col,r){
+  const a=new THREE.Vector3(p[0],0.13,-p[1]), b=new THREE.Vector3(q[0],0.13,-q[1]);
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,a.distanceTo(b),12),
+    new THREE.MeshStandardMaterial({color:col,roughness:.5}));
+  m.position.copy(a).add(b).multiplyScalar(.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
+    b.clone().sub(a).normalize());
+  m.castShadow=true; return m;
+}
+/* 대각선 AC·선분 GG′ 없음 — 아직 나누기 전이다 */
+
+/* G, G' 구슬 */
+function ball(p,col,rad,y){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(rad,24,18),
+    new THREE.MeshStandardMaterial({color:col,roughness:.35,
+      emissive:new THREE.Color(col).multiplyScalar(.16)}));
+  m.position.set(p[0],y||0.2,-p[1]); m.castShadow=true; return m;
+}
+/* G·G′·N 구슬 없음 — 삼각형으로 나눈 뒤에야 등장하는 점들이다 */
+
+/* ── 라벨 (스프라이트: 항상 정면) ── */
+function label(text,col,size){
+  const c=document.createElement('canvas'); const S=128; c.width=c.height=S;
+  const g=c.getContext('2d');
+  g.font='bold 74px "Cambria Math",Georgia,serif';
+  g.textAlign='center'; g.textBaseline='middle';
+  g.lineWidth=9; g.strokeStyle='rgba(10,18,30,.92)';
+  g.strokeText(text,S/2,S/2);
+  g.fillStyle=col; g.fillText(text,S/2,S/2);
+  const tx=new THREE.CanvasTexture(c);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,
+    depthTest:false,depthWrite:false}));
+  sp.scale.set(size||1.5,size||1.5,1);
+  sp.renderOrder=999;
+  return sp;
+}
+/* 라벨은 점에 겹치지 않게 판 평면 위에서 지정 방향으로 밀어낸다.
+   off=[dx,dy] 는 xy평면(교과서 좌표) 기준 밀어낼 방향·거리, dy는 판 위 높이. */
+function addLabel(p,text,col,off,dy,size){
+  const sp=label(text,col,size);
+  const o=off||[0,0];
+  sp.position.set(p[0]+o[0],(dy===undefined?0.85:dy),-(p[1]+o[1]));
+  plate.add(sp); return sp;
+}
+// 꼭짓점 — 각각 도형 바깥쪽으로
+addLabel(A,'A','#dbe6f5',[-1.3,-0.5],0.8);
+addLabel(B,'B','#dbe6f5',[0.5,-1.3],0.8);
+addLabel(C,'C','#dbe6f5',[1.3,0.4],0.8);
+addLabel(D,'D','#dbe6f5',[-0.4,1.3],0.8);
+/* leader/pinLabel — 1번에서는 쓰지 않는다(표시할 중앙 점이 없다).
+   2번과 코드를 맞춰 두기 위해 남겨 둔다. */
+
+/* 지시선: 점 p(판 위) → 라벨 자리 q(판 위 높이 h) — 비스듬히 뻗는다 */
+function leader(p,q,h,col){
+  const g=new THREE.BufferGeometry().setFromPoints(
+    [new THREE.Vector3(p[0],0.22,-p[1]),new THREE.Vector3(q[0],h-0.4,-q[1])]);
+  const ln=new THREE.Line(g,new THREE.LineBasicMaterial({
+    color:col,transparent:true,opacity:.6}));
+  plate.add(ln); return ln;
+}
+/* 라벨을 점에서 '가로로' 밀어내고 지시선으로 연결.
+   off는 판 평면(xy) 위의 이동량 — 네 점이 서로 다른 방향으로 흩어진다. */
+function pinLabel(p,text,col,off,h,size){
+  const q=[p[0]+off[0],p[1]+off[1]];
+  const ln=leader(p,q,h,col);
+  const sp=label(text,col,size);
+  sp.position.set(q[0],h,-q[1]);
+  plate.add(sp); return {sp,ln};
+}
+/* 네 점을 서로 다른 방향으로: G는 B쪽(아래), N은 A쪽(왼쪽),
+   M은 C쪽(오른쪽), G′는 D쪽(위) — 사방으로 갈라져 겹치지 않는다. */
+/* G·N·G′ 라벨 없음 */
+/* M 표시 없음 — 학생이 찾아야 할 답이므로 미리 보여주지 않는다.
+   (상수 M은 '어디가 평형인가'를 계산하는 데만 쓰인다) */
+
+/* 받침점 — 판을 아래에서 점으로 받친다 (기둥 없음) */
+const postG=new THREE.Group(); plate.add(postG);
+const pivotDot=new THREE.Mesh(new THREE.SphereGeometry(0.22,20,16),
+  new THREE.MeshStandardMaterial({color:0x5ec8f0,roughness:.3,metalness:.3,
+    emissive:0x11485c}));
+pivotDot.position.y=0.16; pivotDot.castShadow=true; postG.add(pivotDot);
+
+/* 받침대 — 바닥에서 받침점까지 올라오는 기둥
+   길이를 상수로 박아두면 바닥(FLOOR)이나 받침 높이가 바뀔 때 공중에 뜬다.
+   → 항상 '바닥에서 받침점까지'로 계산한다. */
+const PIVOT_Y=0.6;                    // 받침 높이(월드) — update()와 공유
+const standH=PIVOT_Y-FLOOR;           // = 9.6, 바닥에 정확히 닿는다
+const standM=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.13,standH,14),
+  new THREE.MeshStandardMaterial({color:0x8e9cb0,roughness:.6,metalness:.25}));
+standM.castShadow=true; scene.add(standM);
+const standBase=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.7,0.35,26),
+  new THREE.MeshStandardMaterial({color:0x6f7d90,roughness:.75}));
+standBase.castShadow=true; standBase.receiveShadow=true; scene.add(standBase);
+const standTip=new THREE.Mesh(new THREE.ConeGeometry(0.16,0.5,14),
+  new THREE.MeshStandardMaterial({color:0xb8c4d4,roughness:.4,metalness:.4}));
+standTip.castShadow=true; scene.add(standTip);
+
+/* 연직 기준선 — 받침점을 지나는 수직선 (기울기를 눈으로 재는 기준) */
+const plumbGeo=new THREE.BufferGeometry().setFromPoints(
+  [new THREE.Vector3(0,7.5,0),new THREE.Vector3(0,FLOOR,0)]);
+const plumb=new THREE.Line(plumbGeo,
+  new THREE.LineBasicMaterial({color:0x44618a,transparent:true,opacity:.35}));
+scene.add(plumb);
+
+/* ── 침의 좌표 라벨 (바닥, 침을 따라다닌다) ──
+   슬라이더를 움직이면 그 값이 화면의 침 옆에서 바로 확인된다.
+   floorText()는 텍스처가 고정이라 쓸 수 없다 → 캔버스를 계속 다시 그린다. */
+const pinCv=document.createElement('canvas'); pinCv.width=384; pinCv.height=96;
+const pinCtx=pinCv.getContext('2d');
+const pinTex=new THREE.CanvasTexture(pinCv);
+/* 스프라이트로 둔다 — 바닥에 눕히면 비스듬히 내려다볼 때 납작하게 찌그러져 안 읽힌다.
+   스프라이트는 시점과 무관하게 늘 정면을 향한다. */
+const pinLabelMesh=new THREE.Sprite(new THREE.SpriteMaterial({
+  map:pinTex,transparent:true,depthTest:false,depthWrite:false}));
+pinLabelMesh.scale.set(4.6,1.15,1);
+pinLabelMesh.renderOrder=998;
+scene.add(pinLabelMesh);
+let pinTxtPrev='';
+function drawPinLabel(x,y){
+  const txt='( '+x.toFixed(1)+' , '+y.toFixed(1)+' )';
+  if(txt===pinTxtPrev) return;              // 안 바뀌면 다시 그리지 않는다
+  pinTxtPrev=txt;
+  pinCtx.clearRect(0,0,384,96);
+  /* 배경 알약 — 격자 위에 글자만 있으면 배경과 섞여 읽기 어렵다 */
+  pinCtx.fillStyle='rgba(14,24,38,.88)';
+  pinCtx.strokeStyle='rgba(94,200,240,.65)'; pinCtx.lineWidth=3;
+  const rw=344, rh=72, rx=(384-rw)/2, ry=(96-rh)/2, rr=rh/2;
+  pinCtx.beginPath();
+  pinCtx.moveTo(rx+rr,ry); pinCtx.lineTo(rx+rw-rr,ry);
+  pinCtx.arcTo(rx+rw,ry,rx+rw,ry+rr,rr); pinCtx.lineTo(rx+rw,ry+rh-rr);
+  pinCtx.arcTo(rx+rw,ry+rh,rx+rw-rr,ry+rh,rr); pinCtx.lineTo(rx+rr,ry+rh);
+  pinCtx.arcTo(rx,ry+rh,rx,ry+rh-rr,rr); pinCtx.lineTo(rx,ry+rr);
+  pinCtx.arcTo(rx,ry,rx+rr,ry,rr); pinCtx.closePath();
+  pinCtx.fill(); pinCtx.stroke();
+  pinCtx.font='bold 46px "Cambria Math",Georgia,serif';
+  pinCtx.textAlign='center'; pinCtx.textBaseline='middle';
+  pinCtx.fillStyle='#8fd8f5'; pinCtx.fillText(txt,192,49);
+  pinTex.needsUpdate=true;
+}
+
+/* ═══════ 평형 자세 계산 — 아래에서 받치는 모델 (2차원) ═══════
+   2번(선분 GG′ 위)과 달리 받침점 P가 사각형 위 아무 데나 올 수 있다.
+   → 기울기가 한 방향이 아니라 '어느 쪽으로든' 생긴다.
+
+   받침점 P가 무게중심 M과 어긋나면 판은 M이 있는 쪽(무거운 쪽)으로 기운다.
+     어긋남 벡터 d = M − P        (판 평면 위, 교과서 xy좌표)
+     기울기      = MAXT * tanh(|d|/SOFT)      — 멀수록 많이 기울되 뒤집히지 않는다
+     회전축      = d 에 수직인 판 위의 방향    — P마다 매번 달라진다
+   |d|=0 이면(=무게중심을 정확히 받치면) 기울지 않는다. */
+/* SOFT=1.6(2번 값)이면 거리 3만 넘어도 전부 33~34°로 포화된다.
+   → 판 어디를 받쳐도 기울기가 같아 보여서 '어느 쪽으로 가야 하는지' 알 수 없다.
+   SOFT=6이면 판 끝(거리 8)까지 기울기가 계속 벌어져(6°…30°) 방향을 읽을 수 있다. */
+const MAXT=34*Math.PI/180, SOFT=6;
+/* 수평 판정 반경 — 2차원이라 마우스로 무게중심을 '정확히' 찍기는 불가능하다.
+   각도로만 재면 반경이 너무 좁아 학생이 영영 못 찾는다.
+   → 무게중심에서 이 거리 안이면 수평으로 본다.
+     0.3 = 경계에서도 1.7°라 눈으로 수평으로 보이고,
+     슬라이더 0.1 단위로 도달 가능한 격자점이 29개라 충분히 맞출 수 있다. */
+const LEVEL_R=0.3;
+
+/* 판 로컬 xy(교과서 좌표) → 월드 방향벡터. y가 -z로 간다(판이 xz평면에 눕는다). */
+const toWorld=(x,y)=>new THREE.Vector3(x,0,-y);
+
+/* 받침점 P(로컬 xy)에서의 평형 자세 */
+function poseFor(P){
+  const dx=M[0]-P[0], dy=M[1]-P[1];
+  const dist=Math.hypot(dx,dy);
+  /* 판정 반경 안이면 완전히 수평으로 붙인다.
+     '수평입니다'라고 하면서 화면은 조금 기울어 있으면 학생이 혼란스럽다. */
+  if(dist<LEVEL_R) return {q:new THREE.Quaternion(),P};
+  const ang=MAXT*Math.tanh(dist/SOFT);
+  // 기울어 내려가는 방향 = M 쪽. 그 방향에 수직인 축으로 회전한다.
+  const dirW=toWorld(dx,dy).normalize();
+  const ax=new THREE.Vector3(0,1,0).cross(dirW).normalize();
+  return {q:new THREE.Quaternion().setFromAxisAngle(ax,ang),P};
+}
+function tiltOf(P){
+  const dist=Math.hypot(M[0]-P[0],M[1]-P[1]);
+  if(dist<LEVEL_R) return 0;
+  return MAXT*Math.tanh(dist/SOFT)*180/Math.PI;
+}
+
+/* 카메라 상수 */
+const R=29;                          // 궤도 반지름 — 작을수록 확대된다.
+                                     // 34는 여백이 너무 많았다. 29면 기본 시점에서
+                                     // 판·좌표축이 화면의 83%까지 차오른다(실측).
+
+/* ═══════ 갱신 ═══════ */
+const tv=document.getElementById('tv'), ts=document.getElementById('ts'),
+      pv=document.getElementById('pv'), tag=document.getElementById('tag'),
+      hb=document.getElementById('hintbox');
+let found=false;
+
+function update(){
+  // 받침점이 목표로 부드럽게 따라간다 (2차원)
+  cP[0] += (tP[0]-cP[0])*0.16;
+  cP[1] += (tP[1]-cP[1])*0.16;
+  /* 침을 옮기는 '동안'에는 판을 수평으로 들고 있다가, 손을 떼면 그때 기운다.
+     실제 실험 순서와 같다: 침을 옮긴다 → 손을 뗀다 → 평형인지 관찰한다.
+     끄는 내내 판이 요동치면 어디를 짚고 있는지조차 보이지 않는다. */
+  const {q,P}=poseFor(cP);
+  plate.quaternion.slerp(q,0.16);
+
+  /* ── 판은 제자리, '침'이 움직인다 ──
+     2번은 침을 원점에 고정하고 판을 밀어 받침점을 맞췄다. 1번에서는 반대다.
+     학생이 옮기는 것이 침이므로, 화면에서도 침이 움직여야 행동과 일치한다.
+     (판이 미끄러지면 '침을 옮겼다'가 아니라 '판이 흘러갔다'로 보인다.)
+
+     판은 받침점 P를 축으로 기운다 → P가 공중에서 제자리를 지키도록 판을 배치한다. */
+  const pLocal=new THREE.Vector3(P[0],0,-P[1]);
+  const pWorld=pLocal.clone().applyQuaternion(plate.quaternion);
+  plate.position.set(P[0]-pWorld.x, PIVOT_Y-pWorld.y, -P[1]-pWorld.z);
+  postG.position.set(P[0],0,-P[1]);
+
+  // 스탠드·침은 받침점 바로 아래 수직으로 따라간다
+  const sx=P[0], sz=-P[1];
+  standM.position.set(sx,PIVOT_Y-standH/2,sz);
+  standTip.position.set(sx,PIVOT_Y-0.25,sz);
+  standBase.position.set(sx,PIVOT_Y-standH+0.17,sz);
+  plumb.position.set(sx,0,sz);          // 연직 기준선도 침을 따라간다
+  /* 좌표 라벨 — 받침대 바로 위, 바닥 가까이.
+     '눕히지는' 않는다(눕히면 비스듬한 시점에서 납작해져 안 읽힌다).
+     스프라이트로 세워 둔 채 높이만 바닥 쪽으로 내린다. */
+  drawPinLabel(cP[0],cP[1]);
+  pinLabelMesh.position.set(sx, FLOOR+0.62, sz);
+
+  const deg=tiltOf(cP), level=Math.hypot(M[0]-cP[0],M[1]-cP[1])<LEVEL_R;
+  tv.textContent=deg.toFixed(1)+'°';
+  tv.style.color=level?'#2ecc71':(deg>18?'#e8734a':'#ffd166');
+  /* ⚠️ 어느 쪽으로 기우는지 '말로' 알려주지 않는다.
+     '무게중심이 있는 쪽으로 기움' 같은 문구는 정답 방향을 그대로 일러주는 것이라
+     학생이 스스로 찾을 이유가 사라진다. 기우는 모습은 화면으로 보면 된다.
+     화면이 알려주는 것은 '지금 몇 도인가'까지다. */
+  if(level){ts.textContent='이 근방 — 거의 기울지 않는다';ts.style.color='#2ecc71'}
+  else{ts.textContent='기울어져 있다';ts.style.color='#e8a05a'}
+
+  /* 받침점 위치 — 특정 점 근처면 이름으로, 아니면 좌표로 */
+  pv.textContent='( '+cP[0].toFixed(1)+' , '+cP[1].toFixed(1)+' )';
+  /* 단언 금지 — 슬라이더로 맞춘 자리는 눈대중이라 '정확한 점'이 아니다.
+     정확한 점은 나중에 작도로 찾는다. */
+  tag.textContent=level?'무게중심이 이 근방에 있습니다':('지면과 '+deg.toFixed(1)+'°를 이룹니다');
+  tag.style.background=level?'rgba(30,90,55,.94)':'rgba(20,32,48,.92)';
+
+  if(level&&!found){found=true;
+    /* ⚠️ 축하하지 않는다. 이 화면의 목적은 성공이 아니라 '막막함'이다.
+       칭찬하면 "이미 해결했는데 왜 더 하냐"가 되어 다음 단계의 동기가 죽는다. */
+    hb.innerHTML='이 근방에서 수평이 됩니다.<br>'+
+      '그런데 <b>이 자리가 정확히 어디인지</b> 말할 수 있습니까?<br><br>'+
+      '<b>눈대중 말고, 확실하게 찾는 방법은 없을까요?</b>';}
+
+  const ph=camA;
+  /* ── 카메라: 수직축을 따라 위아래로만 평행이동 ──
+     - 좌우 위치(x, z)는 회전각 ph로만 결정된다 → 슬라이더로는 절대 안 변한다.
+     - 시선을 카메라와 같은 높이에 두어 고개를 숙이지 않는다(pitch=0).
+     - 투영 보정(시프트)은 넣지 않는다. 넣으면 판이 화면 중앙에 붙어버려
+       '올라가는 느낌' 없이 보는 각도만 바뀐다.
+     → 그래서 높이 범위를 판이 화면에 남는 구간으로 제한했다. */
+  cam.position.set(Math.sin(ph)*R, camY, Math.cos(ph)*R);
+  cam.lookAt(Math.sin(ph)*R*0.001, camY, Math.cos(ph)*R*0.001);
+  rnd.render(scene,cam);
+  requestAnimationFrame(update);
+}
+let camA=0.62, camY=0.6;      // 카메라 높이 — 슬라이더로만 조절 (수직 이동 전담)
+                              // 기본 = 판과 같은 높이. 위아래로 각각 6.8씩 대칭
+/* 순간이동 버튼 없음 — 주어진 자리에서 슬라이더 조작만으로 찾는 것이 활동의 전부다.
+   버튼으로 건너뛸 수 있으면 '더듬어 찾기'가 사라진다. */
+
+const elsl=document.getElementById('elsl');
+elsl.oninput=()=>{camY=+elsl.value/10};
+
+/* ── 조작: 판을 짚으면 받침점 이동, 빈 공간을 끌면 시점 회전 ──
+   ⚠️ 두 동작이 같은 마우스를 쓰므로 시작 지점으로 갈라야 한다.
+      · 판(사각형) 위에서 누름  → 받침점을 그 자리로 (계속 끌면 따라온다)
+      · 그 밖의 빈 공간에서 누름 → 좌우 시점 회전
+      · 조작 패널(#vc·#lg) 위   → 무시 (슬라이더가 시점을 돌려버리는 것을 막는다) */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+
+/* ── 조작: 가로·세로 슬라이더 2개로 침을 옮긴다 ──
+   자유 드래그(판이나 바닥을 직접 짚기)는 폐기했다. 2차원을 한 번에 더듬으면
+   방향 단서가 없어 무게중심을 찾을 수 없다.
+   축을 하나씩 움직이면 "가로를 옮겼더니 기울기가 줄었다 → 이 방향이 맞다"는
+   탐색이 가능해진다. 실제 실험에서도 한 방향씩 조금씩 옮겨 가며 맞춘다. */
+const slx=document.getElementById('slx'), sly=document.getElementById('sly'),
+      vx=document.getElementById('vx'), vy=document.getElementById('vy');
+/* 슬라이더 값 = 좌표 ×10 (0.1 단위로 움직인다).
+   화면에는 좌표 그대로 보여 준다 — 학생이 좌표평면에서 읽는 값과 같아야 한다. */
+const sv=el=>+el.value/10;
+function showXY(){
+  vx.textContent=sv(slx).toFixed(1);
+  vy.textContent=sv(sly).toFixed(1);
+}
+function fromSliders(){
+  tP=clampToQuad([sv(slx),sv(sly)]);   // 사각형 밖이면 가장 가까운 변으로
+  showXY();
+}
+slx.oninput=fromSliders; sly.oninput=fromSliders;
+
+/* 버튼으로 점프하면 슬라이더·표시도 그 자리로 맞춘다 (어긋나면 안 된다) */
+function syncSliders(p){
+  slx.value=Math.round(p[0]*10); sly.value=Math.round(p[1]*10); showXY();
+}
+
+/* ── 시점 회전 (좌우) ── */
+let dragging=false, lx=0;
+const isUI=e=>e.target.closest('#vc,#lg');
+view.addEventListener('mousedown',e=>{if(isUI(e))return; dragging=true; lx=e.clientX});
+addEventListener('mousemove',e=>{if(dragging){camA-=(e.clientX-lx)*0.007;lx=e.clientX}});
+addEventListener('mouseup',()=>dragging=false);
+view.addEventListener('touchstart',e=>{if(isUI(e))return; dragging=true; lx=e.touches[0].clientX},{passive:true});
+addEventListener('touchmove',e=>{if(dragging){camA-=(e.touches[0].clientX-lx)*0.007;lx=e.touches[0].clientX}},{passive:true});
+addEventListener('touchend',()=>dragging=false);
+
+function resize(){const r=view.getBoundingClientRect();
+  const vw=Math.max(1,r.width), vh=Math.max(1,r.height);
+  cam.aspect=vw/vh; cam.updateProjectionMatrix(); rnd.setSize(vw,vh);
+  rnd.setPixelRatio(Math.min(2,devicePixelRatio||1))}
+pickStart();                           // 매번 다른 곳에서, 충분히 기울어진 채로 시작
+syncSliders(tP);                       // 시작 좌표를 슬라이더·표시에 반영
+addEventListener('resize',resize); resize(); update();
+</script></body></html>
