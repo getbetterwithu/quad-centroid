@@ -161,7 +161,8 @@ button.on{background:#2f6fb5;border-color:#4a8ed0;color:#fff}
       <button id="bE">G′</button>
     </div>
     <div class="hint" id="hintbox">
-      선분 <b>GG′의 중점 N</b>을 손끝으로 받쳤습니다. 선분 위에 있는데도 판이 기울어집니다.<br>
+      대각선 <b>AC</b>를 그으니 <b>무게중심을 아는 도형 두 개</b>가 되었습니다.<br>
+      각 무게중심 <b>G · G′</b>를 선분으로 이었습니다.<br><br>
       슬라이더를 움직여 <b>기울지 않는 자리</b>를 찾아보십시오.
     </div>
   </div>
@@ -514,7 +515,8 @@ function update(){
   if(level&&!found){found=true;
     hb.innerHTML='이 근방에서 기울지 않습니다.<br>'+
       '무게중심은 <b>선분 GG′ 위</b>에 있다는 것을 확인했습니다.<br><br>'+
-      '그런데 <b>중점 N이 아닙니다.</b> 선분 위 <b>어느 점</b>일까요?';}
+      '그런데 <b>중점 N이 아닙니다.</b> 선분 위 <b>어느 점</b>일까요?<br>'+
+      '<span style="color:#8fc4f5">두 삼각형의 <b>넓이가 같다면</b> 어디였을까요? → 위의 <b>3</b>번으로</span>';}
 
   const ph=camA;
   /* ── 카메라: 수직축을 따라 위아래로만 평행이동 ──
